@@ -1,5 +1,6 @@
 """
-Alexa 3-button wall box for a NodeMCU ESP-12E (CP2102) + three 12x12 mm tact switches.
+Alexa 5-button wall box for a NodeMCU ESP-12E (CP2102) + five 12x12 mm tact switches.
+Top row: plug ON / OFF / power-cycle.  Bottom row: lights ON / OFF.
 Generates base.stl and lid.stl. All dimensions in mm; tweak the parameters below and re-run:
     pip install manifold3d trimesh numpy
     python make_case.py
@@ -12,7 +13,7 @@ import numpy as np
 # ---------------- parameters ----------------
 WALL = 2.4          # side wall thickness
 FLOOR = 2.0         # base floor thickness
-IN_L, IN_W, IN_H = 80.0, 50.0, 32.0   # inside length, width, height of base
+IN_L, IN_W, IN_H = 80.0, 74.0, 32.0   # inside length, width, height of base
 
 BOARD_L, BOARD_W = 49.0, 26.0   # NodeMCU CP2102 PCB (measure yours! some are 48 x 26)
 BOARD_CLEAR = 0.6               # extra room around the PCB
@@ -88,8 +89,11 @@ lip = box(lip_l, lip_w, LIP_H) - box(lip_l - 2 * LIP_W, lip_w - 2 * LIP_W, LIP_H
 lid += lip.translate([lx0, ly0, LID_T])
 
 # button centres (in lid coordinates, mirrored later so they line up when flipped)
-cy = OUT_W / 2 - 4
-centres = [(OUT_L / 2 + (i - 1) * BTN_PITCH, cy) for i in range(3)]
+ROW_PITCH = 30.0
+top_y = OUT_W / 2 - ROW_PITCH / 2      # plug row (top on the wall)
+bot_y = OUT_W / 2 + ROW_PITCH / 2      # lights row (bottom on the wall)
+centres = [(OUT_L / 2 + (i - 1) * BTN_PITCH, top_y) for i in range(3)] + \
+          [(OUT_L / 2 + d * BTN_PITCH / 2, bot_y) for d in (-1, 1)]
 pocket_in = BTN + BTN_CLEAR
 pocket_out = pocket_in + 2 * POCKET_WALL
 for (x, y) in centres:
@@ -111,10 +115,22 @@ def bar(w, h):
 
 # lid is printed upside down: installed coords are (x, OUT_W - y), so +Y here = down on the wall
 sym_dy = CAP_HOLE / 2 + 7.5
+
+def sun():   # lights ON: dot with 8 rays
+    s = cyl(SYMBOL_DEPTH + 1, 2.2)
+    for k in range(8):
+        s += box(1.2, 1.8, SYMBOL_DEPTH + 1).translate([-0.6, 3.2, 0]).rotate([0, 0, k * 45])
+    return s
+
+def moon():  # lights OFF: crescent (opening faces right when installed)
+    return cyl(SYMBOL_DEPTH + 1, 4.2) - cyl(SYMBOL_DEPTH + 3, 3.6).translate([1.9, -0.9, -1])
+
 symbols = [
     bar(1.6, 8.0),                                            # | = ON
     ring(4.0, 2.6),                                           # O = OFF
     ring(4.0, 2.6, gap_deg=70) + bar(1.6, 5.0).translate([0, -2.8, 0]),  # power symbol = power-cycle
+    sun(),                                                    # lights ON
+    moon(),                                                   # lights OFF
 ]
 for (x, y), s in zip(centres, symbols):
     lid -= s.translate([x, y + sym_dy, -1])

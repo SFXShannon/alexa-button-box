@@ -1,5 +1,5 @@
 /*
-  Alexa 3-button wall box  —  NodeMCU ESP-12E (ESP8266, CP2102)
+  Alexa 5-button wall box  —  NodeMCU ESP-12E (ESP8266, CP2102)
 
   Each button calls a Virtual Smart Home "URL Routine Trigger" URL.
   Each trigger shows up in the Alexa app as a doorbell-type device that you
@@ -8,9 +8,11 @@
     Button 1 (D5)  ->  Routine: turn plug ON
     Button 2 (D6)  ->  Routine: turn plug OFF
     Button 3 (D7)  ->  Routine: turn plug OFF, Wait 10 s, turn plug ON
+    Button 4 (D1)  ->  Routine: turn lights ON
+    Button 5 (D2)  ->  Routine: turn lights OFF
 
   Wiring (no resistors needed, internal pull-ups are used):
-    one leg of each switch -> D5 / D6 / D7
+    one leg of each switch -> D5 / D6 / D7 / D1 / D2
     the diagonal leg of each switch -> any G (GND) pin
     (12x12 tact switches: legs on the same side are internally connected;
      use two legs that are diagonal from each other to be safe)
@@ -24,28 +26,32 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecureBearSSL.h>
 
+#define NUM_BTNS 5
+
 // ---------- fill these in ----------
 const char* WIFI_SSID = "YOUR_WIFI_NAME";
 const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";
 
 // Paste the full trigger URLs from virtualsmarthome.xyz (URL Routine Trigger page)
-const char* TRIGGER_URL[3] = {
+const char* TRIGGER_URL[NUM_BTNS] = {
   "https://www.virtualsmarthome.xyz/url_routine_trigger/activate.php?trigger=PASTE_ON_TRIGGER_HERE",
   "https://www.virtualsmarthome.xyz/url_routine_trigger/activate.php?trigger=PASTE_OFF_TRIGGER_HERE",
-  "https://www.virtualsmarthome.xyz/url_routine_trigger/activate.php?trigger=PASTE_CYCLE_TRIGGER_HERE"
+  "https://www.virtualsmarthome.xyz/url_routine_trigger/activate.php?trigger=PASTE_CYCLE_TRIGGER_HERE",
+  "https://www.virtualsmarthome.xyz/url_routine_trigger/activate.php?trigger=PASTE_LIGHTS_ON_TRIGGER_HERE",
+  "https://www.virtualsmarthome.xyz/url_routine_trigger/activate.php?trigger=PASTE_LIGHTS_OFF_TRIGGER_HERE"
 };
 // -----------------------------------
 
-const uint8_t BTN_PIN[3] = { D5, D6, D7 };
-const char*   BTN_NAME[3] = { "ON", "OFF", "POWER CYCLE" };
+const uint8_t BTN_PIN[NUM_BTNS]  = { D5, D6, D7, D1, D2 };
+const char*   BTN_NAME[NUM_BTNS] = { "PLUG ON", "PLUG OFF", "PLUG POWER CYCLE", "LIGHTS ON", "LIGHTS OFF" };
 const uint8_t LED = LED_BUILTIN;          // blue LED on the ESP module, active LOW
 
 const unsigned long DEBOUNCE_MS = 40;
 const unsigned long LOCKOUT_MS  = 2000;   // ignore repeat presses for 2 s (stops double-triggers)
 
-bool lastReading[3] = { HIGH, HIGH, HIGH };
-bool stableState[3] = { HIGH, HIGH, HIGH };
-unsigned long lastChange[3] = { 0, 0, 0 };
+bool lastReading[NUM_BTNS] = { HIGH, HIGH, HIGH, HIGH, HIGH };
+bool stableState[NUM_BTNS] = { HIGH, HIGH, HIGH, HIGH, HIGH };
+unsigned long lastChange[NUM_BTNS] = { 0 };
 unsigned long lastFire = 0;
 
 void ledBlink(int times, int ms) {
@@ -99,7 +105,7 @@ void setup() {
   Serial.begin(115200);
   pinMode(LED, OUTPUT);
   digitalWrite(LED, HIGH);
-  for (int i = 0; i < 3; i++) pinMode(BTN_PIN[i], INPUT_PULLUP);
+  for (int i = 0; i < NUM_BTNS; i++) pinMode(BTN_PIN[i], INPUT_PULLUP);
   WiFi.persistent(false);
   WiFi.setAutoReconnect(true);
   connectWiFi();
@@ -109,7 +115,7 @@ void setup() {
 void loop() {
   unsigned long now = millis();
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < NUM_BTNS; i++) {
     bool reading = digitalRead(BTN_PIN[i]);
     if (reading != lastReading[i]) {
       lastChange[i] = now;
