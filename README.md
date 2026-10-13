@@ -90,7 +90,7 @@ The local key only changes if you re-pair the plug. The Tuya developer trial exp
 
 ## 4. Set up the home server
 
-1. Install **Python 3** on the server from python.org, ticking *Add python.exe to PATH*.
+1. Install **Python 3** on the server from python.org. The scripts find it even if it isn't on PATH, and install `tinytuya` for you.
 2. Copy the `server` folder to it, e.g. `C:\AlexaButtonBox\server`.
 3. Copy `config.example.json` to `config.json` and fill in:
    - `plug.id`, `plug.local_key`, `plug.ip`, `plug.version` from the wizard
@@ -149,6 +149,7 @@ All requests need `?token=YOURTOKEN`. Handy for testing from a browser or adding
 | `plug error: Check device key or version` | `local_key` or `version` is wrong. Re-run `python -m tinytuya wizard`; the key changes every time the plug is re-paired. |
 | `plug error` about timeouts | The plug's IP changed. Set a DHCP reservation, or set `"ip": ""` so the server finds it. |
 | Plug works but lights don't | Check the trigger URLs in `config.json`, then open each one in a browser: the Alexa routine should run. |
+| `'python' is not recognized` | Use the latest `start_server.bat` (v2.0.2+), which finds Python without PATH. If it says Python isn't found, install it from python.org. |
 | Box never connects to Wi-Fi (LED keeps flickering) | ESP8266 only does 2.4 GHz; check the SSID and password. |
 | Lid too tight or loose | Change `FIT` in `make_case.py` and reprint the lid. |
 

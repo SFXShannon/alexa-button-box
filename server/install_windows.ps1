@@ -7,7 +7,20 @@ $ErrorActionPreference = "Stop"
 $here   = Split-Path -Parent $MyInvocation.MyCommand.Path
 $config = Get-Content (Join-Path $here "config.json") -Raw | ConvertFrom-Json
 $port   = if ($config.port) { $config.port } else { 8765 }
-$pyw    = (Get-Command pythonw.exe -ErrorAction Stop).Source
+# find pythonw.exe even if Python isn't on PATH
+$pyw = (Get-Command pythonw.exe -ErrorAction SilentlyContinue).Source
+if (-not $pyw -and (Get-Command py.exe -ErrorAction SilentlyContinue)) {
+  $exe = & py.exe -3 -c "import sys; print(sys.executable)"
+  $cand = Join-Path (Split-Path $exe) "pythonw.exe"
+  if (Test-Path $cand) { $pyw = $cand }
+}
+if (-not $pyw) {
+  $pyw = Get-ChildItem "$env:LOCALAPPDATA\Programs\Python\Python3*\pythonw.exe", "$env:ProgramFiles\Python3*\pythonw.exe", "C:\Python3*\pythonw.exe" -ErrorAction SilentlyContinue |
+         Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+}
+if (-not $pyw) { throw "Python 3 not found. Install it from python.org, then run this again." }
+Write-Host "Using $pyw"
+& (Join-Path (Split-Path $pyw) "python.exe") -m pip install -q -r (Join-Path $here "requirements.txt")
 $script = Join-Path $here "alexa_button_server.py"
 
 New-NetFirewallRule -DisplayName "Alexa Button Box server" -Direction Inbound -Protocol TCP `
