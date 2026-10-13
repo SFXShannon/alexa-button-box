@@ -1,5 +1,5 @@
 """
-Alexa 5-button wall box for a NodeMCU ESP-12E (CP2102) + five 12x12 mm tact switches.
+Alexa 5-button wall box for a NodeMCU ESP-12E on a "GPIO 1 into 2" breakout board + five 12x12 mm tact switches.
 Top row: plug ON / OFF / power-cycle.  Bottom row: lights ON / OFF.
 Generates base.stl and lid.stl. All dimensions in mm; tweak the parameters below and re-run:
     pip install manifold3d trimesh numpy
@@ -13,14 +13,18 @@ import numpy as np
 # ---------------- parameters ----------------
 WALL = 2.4          # side wall thickness
 FLOOR = 2.0         # base floor thickness
-IN_L, IN_W, IN_H = 80.0, 74.0, 32.0   # inside length, width, height of base
+IN_L, IN_W, IN_H = 80.0, 74.0, 40.0   # inside length, width, height of base
 
-BOARD_L, BOARD_W = 49.0, 26.0   # NodeMCU CP2102 PCB (measure yours! some are 48 x 26)
-BOARD_CLEAR = 0.6               # extra room around the PCB
-RAIL_H = 14.0                   # board sits this high, leaves room for header pins + dupont plugs
+# NodeMCU sits plugged into a "GPIO 1 into 2" expansion/breakout board; the case holds the breakout.
+BOARD_L, BOARD_W = 63.5, 63.0   # breakout PCB (listed as 6.35 x 6.3 cm) - measure yours
+BOARD_CLEAR = 1.0               # extra room on each side of the PCB
+POST_H = 7.0                    # board rests on corner pads this high (room for solder pins + keyhole screw heads)
 PCB_T = 1.6
-USB_GAP = 1.5                   # gap between USB end of board and inside wall
-USB_SLOT_W, USB_SLOT_H = 12.0, 8.0
+END_GAP = 1.0                   # gap between the jack/USB edge of the board and the inside wall
+# access window in the -X wall for DC jack / power switch / NodeMCU USB (put that edge of the board here)
+WIN_W = 50.0                    # window width along the wall
+WIN_BELOW = 0.5                 # window starts this far below the top of the breakout PCB
+WIN_ABOVE = 15.0                # and goes this far above it (covers DC jack and the NodeMCU's USB)
 
 LID_T = 2.4         # lid plate thickness
 LIP_H = 3.0         # lip that drops inside the base
@@ -49,28 +53,29 @@ OUT_H = FLOOR + IN_H
 
 base = box(OUT_L, OUT_W, OUT_H) - box(IN_L, IN_W, IN_H + 1).translate([WALL, WALL, FLOOR])
 
-# board position (USB end against the -X wall)
-bx0 = WALL + USB_GAP
+# board position (jack / USB edge against the -X wall), centred across the width
+g = BOARD_CLEAR
+bx0 = WALL + END_GAP + g
 by0 = WALL + (IN_W - BOARD_W) / 2
-# end supports: only under the short ends so header pins (which run along the long edges) stay clear
-for x in (bx0, bx0 + BOARD_L - 4.0):
-    base += box(4.0, BOARD_W, RAIL_H).translate([x, by0, FLOOR])
-# corner locating fences (rise 2.5 mm above the support so the board can't slide)
-fence_h = RAIL_H + 2.5
-g = BOARD_CLEAR / 2
-for (fx, fy, sx, sy) in [
-    (bx0 + BOARD_L - 4.0, by0 - 1.5 - g, 5.5 + g, 1.5),            # far end, -Y side
-    (bx0 + BOARD_L - 4.0, by0 + BOARD_W + g, 5.5 + g, 1.5),        # far end, +Y side
-    (bx0 + BOARD_L + g, by0 - 1.5 - g, 1.5, BOARD_W + 3 + 2 * g),  # far end stop
-    (bx0, by0 - 1.5 - g, 4.0, 1.5),                                # USB end, -Y side
-    (bx0, by0 + BOARD_W + g, 4.0, 1.5),                            # USB end, +Y side
-]:
-    base += box(sx, sy, fence_h).translate([fx, fy, FLOOR])
+PAD = 6.0      # corner pad size under the PCB
+FENCE = 1.6    # corner fence thickness
+FENCE_UP = 3.0 # fence rises this far above the pad top to locate the board
+for cx, sx in ((bx0, -1), (bx0 + BOARD_L, 1)):
+    for cy, sy in ((by0, -1), (by0 + BOARD_W, 1)):
+        px = cx if sx < 0 else cx - PAD          # pad under the corner
+        py = cy if sy < 0 else cy - PAD
+        base += box(PAD, PAD, POST_H).translate([px, py, FLOOR])
+        fx = cx - g - FENCE if sx < 0 else cx + g  # L-shaped fence just outside the corner
+        fy = cy - g - FENCE if sy < 0 else cy + g
+        lx = px - (g + FENCE if sx < 0 else 0)
+        ly = py - (g + FENCE if sy < 0 else 0)
+        base += box(FENCE, PAD + g + FENCE, POST_H + FENCE_UP).translate([fx, ly, FLOOR])
+        base += box(PAD + g + FENCE, FENCE, POST_H + FENCE_UP).translate([lx, fy, FLOOR])
 
-# USB slot through the -X wall, centred on the micro-USB connector (top side of PCB)
-usb_z = FLOOR + RAIL_H + PCB_T + 1.4
-base -= box(WALL + 2, USB_SLOT_W, USB_SLOT_H).translate(
-    [-1, by0 + BOARD_W / 2 - USB_SLOT_W / 2, usb_z - USB_SLOT_H / 2])
+# access window through the -X wall for the DC jack, power switch and USB
+pcb_top = FLOOR + POST_H + PCB_T
+base -= box(WALL + 2, WIN_W, WIN_BELOW + WIN_ABOVE).translate(
+    [-1, by0 + BOARD_W / 2 - WIN_W / 2, pcb_top - WIN_BELOW])
 
 # wall-mount keyholes (screw head 8 mm, shank slot 4 mm)
 if KEYHOLE:

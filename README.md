@@ -1,6 +1,6 @@
 # Alexa 5-Button Wall Box
 
-NodeMCU ESP-12E (CP2102) + five 12x12 mm tact switches → Alexa routines → your smart plug and lights.
+NodeMCU ESP-12E (CP2102) on a "GPIO 1 into 2" breakout board + five 12x12 mm tact switches → Alexa routines → your smart plug and lights.
 
 | Row | Button | Symbol on lid | Pin | Alexa routine |
 |---|---|---|---|---|
@@ -12,15 +12,16 @@ NodeMCU ESP-12E (CP2102) + five 12x12 mm tact switches → Alexa routines → yo
 
 ## 1. Print
 
-- `base.stl` – print open side up. Outside 84.8 x 78.8 x 34 mm. Keyhole slots point up, so the plug row ends up on top. No supports.
+- `base.stl` – print open side up. Outside 84.8 x 78.8 x 42 mm. Keyhole slots point up, so the plug row ends up on top. No supports.
 - `lid.stl` – print **as exported** (flat face on the bed, button pockets pointing up). No supports.
 - PLA/PETG, 0.2 mm layers, 3 walls, 20% infill is plenty.
-- Measure your board first: the case assumes a 49 x 26 mm PCB. If yours differs, edit `BOARD_L / BOARD_W` in `make_case.py` and run `python make_case.py` (needs `pip install manifold3d trimesh numpy`). If the lid is too tight/loose, change `FIT`.
+- Measure your breakout board first: the case assumes 63.5 x 63 mm. If yours differs, edit `BOARD_L / BOARD_W` in `make_case.py` and run `python make_case.py` (needs `pip install manifold3d trimesh numpy`). If the lid is too tight/loose, change `FIT`.
 
 ## 2. Wire
 
-Each switch: one leg → its pin (D5, D6, D7, D1, D2), the **diagonally opposite** leg → G (GND).
-No resistors needed (the sketch uses internal pull-ups).
+Plug the NodeMCU into the breakout board (match the antenna mark). Every pin on the breakout has its own **G / V / S** header group.
+Each switch: one leg → that pin's **S**, the **diagonally opposite** leg → that pin's **G**. Female-to-female dupont leads soldered to the switch legs work well.
+Leave **V** unused. No resistors needed (the sketch uses internal pull-ups).
 
 ```
 SW1: D5 ──[ ]── GND
@@ -32,9 +33,10 @@ SW5: D2 ──[ ]── GND
 
 Push each switch into its square pocket on the underside of the lid from below (legs pointing into the box), put a dab of hot glue on the back, then press the caps on from the front.
 
-The board sits on the two end supports with its micro-USB facing the slot in the side wall. There's ~14 mm under the board for header pins and dupont plugs. A strip of double-sided tape on the supports holds it.
+The breakout board rests on four corner pads and is located by L-shaped corner fences. Put the edge with the **DC jack / power switch / NodeMCU USB** toward the big window in the side wall. A dab of hot glue or double-sided tape on the pads holds it.
 
-Power: any 5 V USB phone charger + micro-USB cable.
+Power: either a 6–24 V DC adapter into the breakout's barrel jack, or a 5 V USB charger into the NodeMCU's micro-USB.
+If your jack or switch ends up on a different edge than the USB, tell me which edges and I'll add a second window (or edit `WIN_*` in `make_case.py`).
 
 ## 3. Set up the Alexa side (free)
 
