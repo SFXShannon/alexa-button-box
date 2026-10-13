@@ -1,13 +1,13 @@
-# Alexa 5-Button Wall Box
+# Alexa Button Box
 
-NodeMCU ESP-12E (CP2102) on a "GPIO 1 into 2" breakout board + five 12x12 mm tact switches.
+A 3D-printed wall box with five physical buttons that control a smart plug and Alexa lights.
 
 ```
 button box ──Wi-Fi──► home server (192.168.1.87) ──local Wi-Fi──► Feit smart plug   (no cloud)
                                                  └──internet──► Alexa routine ──► lights
 ```
 
-The plug is switched **directly on your network** (fast, works without internet). The lights are Alexa-only, so the server runs an Alexa routine for those.
+The plug is switched **directly on your network**: fast, and it keeps working when the internet is down. The lights are Alexa-only, so the server runs an Alexa routine for those.
 
 | Row | Button | Symbol on lid | Pin | What happens |
 |---|---|---|---|---|
@@ -17,36 +17,59 @@ The plug is switched **directly on your network** (fast, works without internet)
 | Bottom | 4 | sun | D1 | Lights **ON** (Alexa routine) |
 | Bottom | 5 | moon | D2 | Lights **OFF** (Alexa routine) |
 
+## Download
+
+Grab the **[latest release](https://github.com/SFXShannon/alexa-button-box/releases/latest)**. It has the STLs, the Arduino sketch, the server folder as its own zip, and the wiring diagram.
+
+| Release | Use it if |
+|---|---|
+| **v2.x** (latest) | You have the home server + breakout board (this README) |
+| [v1.1.0](https://github.com/SFXShannon/alexa-button-box/releases/tag/v1.1.0) | Breakout board, no server — buttons call Alexa trigger URLs directly |
+| [v1.0.0](https://github.com/SFXShannon/alexa-button-box/releases/tag/v1.0.0) | Bare NodeMCU without the breakout board, no server |
+
+## Parts
+
+- NodeMCU ESP-12E development board (CP2102)
+- "GPIO 1 into 2" ESP8266 expansion / breakout board (63.5 × 63 mm, micro-USB power)
+- 5 × 12×12×7.3 mm tact switches with caps
+- Female dupont jumper leads
+- 5 V USB phone charger + micro-USB cable
+- An always-on Windows PC on the same network (the home server)
+- Feit Wi-Fi smart plug (Tuya-based, no Matter logo) and Alexa-controlled lights
+- About 70 g of PLA or PETG
+
+## What's in this repo
+
+| Path | What it is |
+|---|---|
+| `base.stl`, `lid.stl` | The case, ready to print |
+| `make_case.py` | Parametric generator for the case: change sizes and re-run |
+| `AlexaButtons/AlexaButtons.ino` | Arduino sketch for the NodeMCU |
+| `server/` | The home-server program, config template and Windows installer |
+| `docs/wiring.png` | Wiring diagram |
+
 ## 1. Print
 
-- `base.stl` – print open side up. Outside 84.8 x 78.8 x 42 mm. Keyhole slots point up, so the plug row ends up on top. No supports.
-- `lid.stl` – print **as exported** (flat face on the bed, button pockets pointing up). No supports.
+- `base.stl`: print open side up. Outside 84.8 × 78.8 × 42 mm. No supports.
+- `lid.stl`: print **as exported** (flat face on the bed, button pockets pointing up). No supports.
 - PLA/PETG, 0.2 mm layers, 3 walls, 20% infill is plenty.
-- Measure your breakout board first: the case assumes 63.5 x 63 mm. If yours differs, edit `BOARD_L / BOARD_W` in `make_case.py` and run `python make_case.py` (needs `pip install manifold3d trimesh numpy`). If the lid is too tight/loose, change `FIT`.
+- Hang it with the **keyhole slots pointing up** so the plug row ends up on top.
+- Measure your breakout board first: the case assumes 63.5 × 63 mm. If yours differs, edit `BOARD_L / BOARD_W` in `make_case.py` and run `python make_case.py` (needs `pip install manifold3d trimesh numpy`). If the lid is too tight or loose, change `FIT`.
 
 ## 2. Wire
 
 ![Wiring diagram](docs/wiring.png)
 
 Plug the NodeMCU into the breakout board (match the antenna mark). Every pin on the breakout has its own **G / V / S** header group.
-Each switch: one leg → that pin's **S**, the **diagonally opposite** leg → that pin's **G**. Female-to-female dupont leads soldered to the switch legs work well.
-You can also chain the ground legs of all five switches together and run a single wire to any **G** (as in the diagram).
-Leave **V** unused. No resistors needed (the sketch uses internal pull-ups).
 
-```
-SW1: D5 ──[ ]── GND
-SW2: D6 ──[ ]── GND
-SW3: D7 ──[ ]── GND
-SW4: D1 ──[ ]── GND
-SW5: D2 ──[ ]── GND
-```
+- **Signal:** one leg of each switch → the **S** header of its pin (D5, D6, D7, D1, D2).
+- **Ground:** the **diagonally opposite** leg of each switch → a **G** header. Either give each switch its own G, or chain all five together and run one wire to any G (as in the diagram).
+- Leave **V** unused. No resistors needed (the sketch uses internal pull-ups).
+- Header order varies between boards: follow the G / V / S printed on yours.
 
 Push each switch into its square pocket on the underside of the lid from below (legs pointing into the box), put a dab of hot glue on the back, then press the caps on from the front.
 
-The breakout board rests on four corner pads and is located by L-shaped corner fences. Put the edge with the **micro-USB power input** (and power switch, if your board has one) toward the window in the side wall. A dab of hot glue or double-sided tape on the pads holds it.
-
-Power: a 5 V USB phone charger + micro-USB cable.
-The window is deliberately wide so it lines up with the micro-USB wherever it sits on that edge; narrow it with `WIN_W` in `make_case.py` if you like.
+The breakout board rests on four corner pads and is held in place by L-shaped corner fences. Put the edge with the **micro-USB power input** toward the window in the side wall. A dab of hot glue or double-sided tape on the pads stops it rattling. Power it from a 5 V USB charger.
 
 ## 3. Get the plug's local key (one time, ~20 min)
 
@@ -55,30 +78,33 @@ The Feit plug runs on the Tuya platform. To control it locally the server needs 
 1. **Move the plug to the Smart Life app.** Install *Smart Life* on your phone and make an account. Remove the plug from the Feit app, factory-reset it (hold its button ~5 s until it blinks fast), then add it in Smart Life. Enable the **Smart Life** skill in the Alexa app if you still want voice control of the plug.
 2. **Make a free Tuya developer account** at [platform.tuya.com](https://platform.tuya.com) → *Cloud → Development → Create Cloud Project*. Industry: Smart Home, development method: Smart Home, data center: **Western America**. Accept the default API services.
 3. In the project: *Devices → Link App Account → Add App Account* and scan the QR code with Smart Life (*Me → scan icon*). Your plug appears in the device list.
-4. On the home server (Windows), in a terminal:
+4. On the home server, in a terminal:
    ```
    pip install tinytuya
    python -m tinytuya wizard
    ```
-   Paste the project's **Access ID** and **Access Secret** (*Overview* tab), region `us`, and say **yes** to scanning the network. It prints each device's `id`, `key`, local IP and version.
+   Paste the project's **Access ID** and **Access Secret** (*Overview* tab), region `us`, and say **yes** to scanning the network. It prints the plug's `id`, `key`, local IP and version.
 5. Give the plug a **fixed IP** in your router (DHCP reservation) so it doesn't move. If you can't, leave `"ip": ""` in the config and the server will find it automatically (slightly slower).
 
-The local key only changes if you re-pair the plug. The Tuya developer trial expiring later doesn't matter — the server talks to the plug directly.
+The local key only changes if you re-pair the plug. The Tuya developer trial expiring later doesn't matter, because the server talks to the plug directly.
 
 ## 4. Set up the home server
 
-1. Install **Python 3** on the server (python.org — tick *Add python.exe to PATH*).
+1. Install **Python 3** on the server from python.org, ticking *Add python.exe to PATH*.
 2. Copy the `server` folder to it, e.g. `C:\AlexaButtonBox\server`.
 3. Copy `config.example.json` to `config.json` and fill in:
    - `plug.id`, `plug.local_key`, `plug.ip`, `plug.version` from the wizard
    - `token`: any password; the same value goes in the sketch
+   - `cycle_seconds`: how long the power-cycle keeps the plug off (default 10)
    - `lights.on` / `lights.off`: the two virtualsmarthome trigger URLs (next section)
-4. Test: double-click `start_server.bat`, then open `http://192.168.1.87:8765/plug/on?token=YOURTOKEN` in a browser. The plug should click on.
-5. Make it start on boot: open PowerShell **as Administrator** in the server folder and run
+4. **Test:** double-click `start_server.bat`, then open `http://192.168.1.87:8765/plug/on?token=YOURTOKEN` in a browser. The plug should click on.
+5. **Start on boot:** open PowerShell **as Administrator** in the server folder and run
    ```
    powershell -ExecutionPolicy Bypass -File .\install_windows.ps1
    ```
-   This opens port 8765 in the firewall (private network only) and adds a scheduled task that runs the server hidden at startup. Activity is logged to `button_server.log`.
+   This opens port 8765 in the firewall (private networks only) and adds a scheduled task that runs the server hidden at startup.
+
+`config.json` holds your plug's key, so it's excluded from git. Don't commit or share it.
 
 ## 5. Set up the lights in Alexa
 
@@ -90,11 +116,42 @@ The local key only changes if you re-pair the plug. The Tuya developer trial exp
 
 ## 6. Flash the sketch
 
-1. Arduino IDE → Preferences → Additional Boards URL: `http://arduino.esp8266.com/stable/package_esp8266com_index.json`, then Boards Manager → install **esp8266**.
+1. Arduino IDE → *Preferences → Additional Boards Manager URLs*: `http://arduino.esp8266.com/stable/package_esp8266com_index.json`, then *Boards Manager* → install **esp8266**.
 2. Board: **NodeMCU 1.0 (ESP-12E Module)**. Install the CP2102 USB driver if the COM port doesn't show up.
-3. Open `AlexaButtons/AlexaButtons.ino` and fill in your Wi-Fi name/password (2.4 GHz network), `SERVER` (`http://192.168.1.87:8765`) and the same `TOKEN` as the server.
+3. Open `AlexaButtons/AlexaButtons.ino` and fill in your Wi-Fi name/password (must be a **2.4 GHz** network), `SERVER` (`http://192.168.1.87:8765`) and the same `TOKEN` as the server.
 4. Upload. Open Serial Monitor at 115200 to watch it connect.
 
-LED on the board: 2 blinks at boot = ready, 1 blink after a press = done, 5 fast blinks = failed (server off, wrong token, or plug unreachable — check `button_server.log`).
+## How it behaves
 
-Pressing ON or OFF during a power-cycle cancels the cycle. Presses within 1 s of the last one are ignored.
+- **LED on the NodeMCU:** 2 blinks at boot = ready · 1 blink after a press = done · 5 fast blinks = failed.
+- Pressing ON or OFF during a power-cycle cancels the cycle.
+- Presses within 1 s of the last one are ignored, so a bouncy button can't fire twice.
+- Everything the server does is logged to `server/button_server.log`.
+
+## Server URLs
+
+All requests need `?token=YOURTOKEN`. Handy for testing from a browser or adding other triggers later.
+
+| URL | Does |
+|---|---|
+| `/plug/on` | Plug on (cancels a running power-cycle) |
+| `/plug/off` | Plug off (cancels a running power-cycle) |
+| `/plug/cycle` | Off → wait `cycle_seconds` → on |
+| `/lights/on` | Fires the lights-on Alexa trigger |
+| `/lights/off` | Fires the lights-off Alexa trigger |
+| `/status` | Shows the plug's current state |
+
+## Troubleshooting
+
+| Symptom | Check |
+|---|---|
+| 5 fast blinks on every button | Server not running, wrong `SERVER` address or `TOKEN` in the sketch, or the firewall rule is missing. Open `http://192.168.1.87:8765/status?token=YOURTOKEN` from another device on your Wi-Fi. |
+| `plug error: Check device key or version` | `local_key` or `version` is wrong. Re-run `python -m tinytuya wizard`; the key changes every time the plug is re-paired. |
+| `plug error` about timeouts | The plug's IP changed. Set a DHCP reservation, or set `"ip": ""` so the server finds it. |
+| Plug works but lights don't | Check the trigger URLs in `config.json`, then open each one in a browser: the Alexa routine should run. |
+| Box never connects to Wi-Fi (LED keeps flickering) | ESP8266 only does 2.4 GHz; check the SSID and password. |
+| Lid too tight or loose | Change `FIT` in `make_case.py` and reprint the lid. |
+
+## License
+
+MIT, see [LICENSE](LICENSE).
