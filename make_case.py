@@ -21,10 +21,10 @@ BOARD_CLEAR = 1.0               # extra room on each side of the PCB
 POST_H = 7.0                    # board rests on corner pads this high (room for solder pins + keyhole screw heads)
 PCB_T = 1.6
 END_GAP = 1.0                   # gap between the jack/USB edge of the board and the inside wall
-# access window in the -X wall for DC jack / power switch / NodeMCU USB (put that edge of the board here)
+# access window in the -X wall for the micro-USB power input (put that edge of the board here)
 WIN_W = 50.0                    # window width along the wall
 WIN_BELOW = 0.5                 # window starts this far below the top of the breakout PCB
-WIN_ABOVE = 15.0                # and goes this far above it (covers DC jack and the NodeMCU's USB)
+WIN_ABOVE = 15.0                # and goes this far above it (covers a micro-USB on the breakout or on the NodeMCU)
 
 LID_T = 2.4         # lid plate thickness
 LIP_H = 3.0         # lip that drops inside the base
@@ -72,7 +72,7 @@ for cx, sx in ((bx0, -1), (bx0 + BOARD_L, 1)):
         base += box(FENCE, PAD + g + FENCE, POST_H + FENCE_UP).translate([fx, ly, FLOOR])
         base += box(PAD + g + FENCE, FENCE, POST_H + FENCE_UP).translate([lx, fy, FLOOR])
 
-# access window through the -X wall for the DC jack, power switch and USB
+# access window through the -X wall for the micro-USB power cable
 pcb_top = FLOOR + POST_H + PCB_T
 base -= box(WALL + 2, WIN_W, WIN_BELOW + WIN_ABOVE).translate(
     [-1, by0 + BOARD_W / 2 - WIN_W / 2, pcb_top - WIN_BELOW])

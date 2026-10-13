@@ -33,10 +33,10 @@ SW5: D2 ──[ ]── GND
 
 Push each switch into its square pocket on the underside of the lid from below (legs pointing into the box), put a dab of hot glue on the back, then press the caps on from the front.
 
-The breakout board rests on four corner pads and is located by L-shaped corner fences. Put the edge with the **DC jack / power switch / NodeMCU USB** toward the big window in the side wall. A dab of hot glue or double-sided tape on the pads holds it.
+The breakout board rests on four corner pads and is located by L-shaped corner fences. Put the edge with the **micro-USB power input** (and power switch, if your board has one) toward the window in the side wall. A dab of hot glue or double-sided tape on the pads holds it.
 
-Power: either a 6–24 V DC adapter into the breakout's barrel jack, or a 5 V USB charger into the NodeMCU's micro-USB.
-If your jack or switch ends up on a different edge than the USB, tell me which edges and I'll add a second window (or edit `WIN_*` in `make_case.py`).
+Power: a 5 V USB phone charger + micro-USB cable.
+The window is deliberately wide so it lines up with the micro-USB wherever it sits on that edge; narrow it with `WIN_W` in `make_case.py` if you like.
 
 ## 3. Set up the Alexa side (free)
 
