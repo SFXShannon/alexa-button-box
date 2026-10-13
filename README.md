@@ -19,8 +19,11 @@ NodeMCU ESP-12E (CP2102) on a "GPIO 1 into 2" breakout board + five 12x12 mm tac
 
 ## 2. Wire
 
+![Wiring diagram](docs/wiring.png)
+
 Plug the NodeMCU into the breakout board (match the antenna mark). Every pin on the breakout has its own **G / V / S** header group.
 Each switch: one leg → that pin's **S**, the **diagonally opposite** leg → that pin's **G**. Female-to-female dupont leads soldered to the switch legs work well.
+You can also chain the ground legs of all five switches together and run a single wire to any **G** (as in the diagram).
 Leave **V** unused. No resistors needed (the sketch uses internal pull-ups).
 
 ```
