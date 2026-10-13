@@ -1,3 +1,11 @@
 __pycache__/
 *.pyc
 build/
+
+# server secrets / logs
+server/config.json
+server/*.log
+server/devices.json
+server/tinytuya.json
+server/snapshot.json
+server/tuya-raw.json

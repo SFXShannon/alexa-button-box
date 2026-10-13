@@ -1,14 +1,21 @@
 # Alexa 5-Button Wall Box
 
-NodeMCU ESP-12E (CP2102) on a "GPIO 1 into 2" breakout board + five 12x12 mm tact switches → Alexa routines → your smart plug and lights.
+NodeMCU ESP-12E (CP2102) on a "GPIO 1 into 2" breakout board + five 12x12 mm tact switches.
 
-| Row | Button | Symbol on lid | Pin | Alexa routine |
+```
+button box ──Wi-Fi──► home server (192.168.1.87) ──local Wi-Fi──► Feit smart plug   (no cloud)
+                                                 └──internet──► Alexa routine ──► lights
+```
+
+The plug is switched **directly on your network** (fast, works without internet). The lights are Alexa-only, so the server runs an Alexa routine for those.
+
+| Row | Button | Symbol on lid | Pin | What happens |
 |---|---|---|---|---|
-| Top | 1 | `|` | D5 | Plug **ON** |
-| Top | 2 | `O` | D6 | Plug **OFF** |
-| Top | 3 | power symbol | D7 | Plug **OFF → wait 10 s → ON** |
-| Bottom | 4 | sun | D1 | Lights **ON** |
-| Bottom | 5 | moon | D2 | Lights **OFF** |
+| Top | 1 | `|` | D5 | Plug **ON** (local) |
+| Top | 2 | `O` | D6 | Plug **OFF** (local) |
+| Top | 3 | power symbol | D7 | Plug **OFF → wait 10 s → ON** (local) |
+| Bottom | 4 | sun | D1 | Lights **ON** (Alexa routine) |
+| Bottom | 5 | moon | D2 | Lights **OFF** (Alexa routine) |
 
 ## 1. Print
 
@@ -41,25 +48,53 @@ The breakout board rests on four corner pads and is located by L-shaped corner f
 Power: a 5 V USB phone charger + micro-USB cable.
 The window is deliberately wide so it lines up with the micro-USB wherever it sits on that edge; narrow it with `WIN_W` in `make_case.py` if you like.
 
-## 3. Set up the Alexa side (free)
+## 3. Get the plug's local key (one time, ~20 min)
 
-1. Go to **virtualsmarthome.xyz → URL Routine Trigger**, sign in with your Amazon account.
-2. Create five triggers, e.g. `Plug On Button`, `Plug Off Button`, `Plug Cycle Button`, `Lights On Button`, `Lights Off Button`. Copy each trigger's URL.
-3. In the Alexa app, enable the **Virtual Smart Home** skill and let it discover devices — the five triggers appear as doorbell-type devices.
-4. Create five routines (Alexa app → More → Routines → +):
-   - *When:* Smart Home → `Plug On Button` → pressed. *Action:* Smart Home → your plug → Power On.
-   - *When:* `Plug Off Button` → *Action:* plug → Power Off.
-   - *When:* `Plug Cycle Button` → *Actions:* plug Power Off → **Wait** 10 seconds → plug Power On.
-   - *When:* `Lights On Button` → *Action:* your lights (or a light group / room) → Power On.
-   - *When:* `Lights Off Button` → *Action:* lights → Power Off.
-5. Test each URL by opening it in a browser — the routine should run before you've touched any hardware.
+The Feit plug runs on the Tuya platform. To control it locally the server needs its **device ID** and **local key**.
 
-## 4. Flash the sketch
+1. **Move the plug to the Smart Life app.** Install *Smart Life* on your phone and make an account. Remove the plug from the Feit app, factory-reset it (hold its button ~5 s until it blinks fast), then add it in Smart Life. Enable the **Smart Life** skill in the Alexa app if you still want voice control of the plug.
+2. **Make a free Tuya developer account** at [platform.tuya.com](https://platform.tuya.com) → *Cloud → Development → Create Cloud Project*. Industry: Smart Home, development method: Smart Home, data center: **Western America**. Accept the default API services.
+3. In the project: *Devices → Link App Account → Add App Account* and scan the QR code with Smart Life (*Me → scan icon*). Your plug appears in the device list.
+4. On the home server (Windows), in a terminal:
+   ```
+   pip install tinytuya
+   python -m tinytuya wizard
+   ```
+   Paste the project's **Access ID** and **Access Secret** (*Overview* tab), region `us`, and say **yes** to scanning the network. It prints each device's `id`, `key`, local IP and version.
+5. Give the plug a **fixed IP** in your router (DHCP reservation) so it doesn't move. If you can't, leave `"ip": ""` in the config and the server will find it automatically (slightly slower).
+
+The local key only changes if you re-pair the plug. The Tuya developer trial expiring later doesn't matter — the server talks to the plug directly.
+
+## 4. Set up the home server
+
+1. Install **Python 3** on the server (python.org — tick *Add python.exe to PATH*).
+2. Copy the `server` folder to it, e.g. `C:\AlexaButtonBox\server`.
+3. Copy `config.example.json` to `config.json` and fill in:
+   - `plug.id`, `plug.local_key`, `plug.ip`, `plug.version` from the wizard
+   - `token`: any password; the same value goes in the sketch
+   - `lights.on` / `lights.off`: the two virtualsmarthome trigger URLs (next section)
+4. Test: double-click `start_server.bat`, then open `http://192.168.1.87:8765/plug/on?token=YOURTOKEN` in a browser. The plug should click on.
+5. Make it start on boot: open PowerShell **as Administrator** in the server folder and run
+   ```
+   powershell -ExecutionPolicy Bypass -File .\install_windows.ps1
+   ```
+   This opens port 8765 in the firewall (private network only) and adds a scheduled task that runs the server hidden at startup. Activity is logged to `button_server.log`.
+
+## 5. Set up the lights in Alexa
+
+1. Go to **virtualsmarthome.xyz → URL Routine Trigger**, sign in with your Amazon account, and create two triggers: `Lights On Button` and `Lights Off Button`. Put their URLs in the server's `config.json`.
+2. In the Alexa app, enable the **Virtual Smart Home** skill and let it discover devices.
+3. Create two routines (*More → Routines → +*):
+   - *When:* `Lights On Button` pressed → *Action:* your lights (or a room / group) → Power On
+   - *When:* `Lights Off Button` pressed → *Action:* lights → Power Off
+
+## 6. Flash the sketch
 
 1. Arduino IDE → Preferences → Additional Boards URL: `http://arduino.esp8266.com/stable/package_esp8266com_index.json`, then Boards Manager → install **esp8266**.
 2. Board: **NodeMCU 1.0 (ESP-12E Module)**. Install the CP2102 USB driver if the COM port doesn't show up.
-3. Open `AlexaButtons/AlexaButtons.ino`, fill in your Wi-Fi name/password (2.4 GHz network) and paste the five trigger URLs.
+3. Open `AlexaButtons/AlexaButtons.ino` and fill in your Wi-Fi name/password (2.4 GHz network), `SERVER` (`http://192.168.1.87:8765`) and the same `TOKEN` as the server.
 4. Upload. Open Serial Monitor at 115200 to watch it connect.
 
-LED on the board: 2 blinks at boot = ready, 1 blink after a press = sent, 5 fast blinks = failed (check Wi-Fi / URL).
-Presses within 2 s of the last one are ignored so a bouncy press can't fire twice.
+LED on the board: 2 blinks at boot = ready, 1 blink after a press = done, 5 fast blinks = failed (server off, wrong token, or plug unreachable — check `button_server.log`).
+
+Pressing ON or OFF during a power-cycle cancels the cycle. Presses within 1 s of the last one are ignored.

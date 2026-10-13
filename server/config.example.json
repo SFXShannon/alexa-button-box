@@ -1,0 +1,17 @@
+{
+  "port": 8765,
+  "token": "change-me",
+  "cycle_seconds": 10,
+
+  "plug": {
+    "id": "PASTE_DEVICE_ID",
+    "local_key": "PASTE_LOCAL_KEY",
+    "ip": "192.168.1.xx",
+    "version": 3.3
+  },
+
+  "lights": {
+    "on":  "https://www.virtualsmarthome.xyz/url_routine_trigger/activate.php?trigger=PASTE_LIGHTS_ON_TRIGGER",
+    "off": "https://www.virtualsmarthome.xyz/url_routine_trigger/activate.php?trigger=PASTE_LIGHTS_OFF_TRIGGER"
+  }
+}
