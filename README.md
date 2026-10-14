@@ -33,10 +33,11 @@ Grab the **[latest release](https://github.com/SFXShannon/alexa-button-box/relea
 - "GPIO 1 into 2" ESP8266 expansion / breakout board (63.5 × 63 mm, micro-USB power)
 - 5 × 12×12×7.3 mm tact switches with caps
 - Female dupont jumper leads
+- 8 × M2.5 self-tapping screws: 4 × 6 mm (board) and 4 × 8 mm countersunk (lid)
 - 5 V USB phone charger + micro-USB cable
 - An always-on Windows PC on the same network (the home server)
 - Feit Wi-Fi smart plug (Tuya-based, no Matter logo) and Alexa-controlled lights
-- About 70 g of PLA or PETG
+- About 80 g of PLA or PETG
 
 ## What's in this repo
 
@@ -50,11 +51,11 @@ Grab the **[latest release](https://github.com/SFXShannon/alexa-button-box/relea
 
 ## 1. Print
 
-- `base.stl`: print open side up. Outside 84.8 × 78.8 × 42 mm. No supports.
+- `base.stl`: print open side up. Outside 84.8 × 84.8 × 42 mm. No supports.
 - `lid.stl`: print **as exported** (flat face on the bed, button pockets pointing up). No supports.
 - PLA/PETG, 0.2 mm layers, 3 walls, 20% infill is plenty.
 - Hang it with the **keyhole slots pointing up** so the plug row ends up on top.
-- Measure your breakout board first: the case assumes 63.5 × 63 mm. If yours differs, edit `BOARD_L / BOARD_W` in `make_case.py` and run `python make_case.py` (needs `pip install manifold3d trimesh numpy`). If the lid is too tight or loose, change `FIT`.
+- **Measure your breakout board first.** The case assumes a 63.5 × 63 mm board with screw holes **57.5 × 57 mm apart** (centre to centre). If yours differs, edit `BOARD_L / BOARD_W` and `HOLE_DX / HOLE_DY` in `make_case.py` and run `python make_case.py` (needs `pip install manifold3d trimesh numpy`). If the lid is too tight or loose, change `FIT`.
 
 ## 2. Wire
 
@@ -67,9 +68,9 @@ Plug the NodeMCU into the breakout board (match the antenna mark). Every pin on 
 - Leave **V** unused. No resistors needed (the sketch uses internal pull-ups).
 - Header order varies between boards: follow the G / V / S printed on yours.
 
-Push each switch into its square pocket on the underside of the lid from below (legs pointing into the box), put a dab of hot glue on the back, then press the caps on from the front.
+Snap each switch into its holder on the underside of the lid: turn it so its **legs point toward the two open sides** of the holder, then push until it clicks under the two hooks. Press the caps on from the front. If your switches are a different height and don't click in (or rattle), change `BODY_H` in `make_case.py`.
 
-The breakout board rests on four corner pads and is held in place by L-shaped corner fences. Put the edge with the **micro-USB power input** toward the window in the side wall. A dab of hot glue or double-sided tape on the pads stops it rattling. Power it from a 5 V USB charger.
+Screw the breakout board onto the four posts (M2.5 × 6 mm) with the NodeMCU's **micro-USB end toward the tall window** in the side wall, and power it from a 5 V USB charger through the NodeMCU's USB. Screw the lid on with the four countersunk M2.5 × 8 mm screws.
 
 ## 3. Get the plug's local key (one time, ~20 min)
 
